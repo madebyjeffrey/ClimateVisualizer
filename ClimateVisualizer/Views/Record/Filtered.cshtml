@@ -1,0 +1,101 @@
+﻿@model ClimateVisualizer.Models.PaginatedRecordList
+@{
+    ViewData["Title"] = "Record Index";
+}
+
+<h2>Climate Dashboard Index - all current Climate Records</h2>
+
+<div>
+    @*<div class="input-group mb-3">
+            <div class="input-group-prepend">
+                <button class="btn btn-outline-secondary" type="button" value="get Next" onclick="location.href='@Url.Action("getPrev", "Record", asp-route)'">Previous Page</button>
+            </div>
+            <input type="text" class="form-control" placeholder="" aria-label="" aria-describedby="basic-addon1">
+            <div class="input-group-append">
+                <button class="btn btn-outline-secondary" type="button" value="get Next" onclick="location.href='@Url.Action("getNext", "Record")'">Next Page</button>
+            </div>
+        </div>*@
+
+    <div>
+        <button class="btn btn-outline-secondary" type="button" value="go to Stations" onclick="location.href='@Url.Action("Index", "Station")'">Check Stations</button>
+    </div>
+
+    <form asp-controller="Record" asp-action="Filtered" method="get">
+        <div class="form-actions">
+            <input asp-for="StationFilter" type="text" class="form-control" placeholder="" aria-label="" aria-describedby="basic-addon1" />
+            <select asp-for="SelectedMonth" asp-items="Model.MonthSelectList"></select>
+            <select asp-for="SelectedProvince" asp-items="Model.ProvinceSelectList"></select>
+            <input type="submit" value="Filter" class="btn btn-default" />
+        </div>
+    </form>
+
+    <button class="btn btn-outline-secondary" type="button" value="reset filters" onclick="location.href='@Url.Action("Index", "Record")'">Reset</button>
+
+    <nav aria-label="Page navigation example">
+        <ul class="pagination">
+            <li class="page-item">
+                <a class="page-link" asp-controller="Record" asp-action="Index" asp-route-pageIndex="@(Model.PageIndex - 1)">Previous</a>
+            </li>
+            <li class="page-item"><a class="page-link" asp-controller="Record" asp-action="Filtered" asp-route-pageIndex="1">1</a></li>
+            <li class="page-item"><a class="page-link" asp-controller="Record" asp-action="Filtered" asp-route-pageIndex="2">2</a></li>
+            <li class="page-item"><a class="page-link" asp-controller="Record" asp-action="Filtered" asp-route-pageIndex="3">3</a></li>
+
+            <li class="page-item"><a class="page-link" asp-controller="Record" asp-action="Filtered" asp-route-pageIndex="@((Model.RecordCount / Model.PageSize) - 2)">@((Model.RecordCount / Model.PageSize) - 2)</a></li>
+            <li class="page-item"><a class="page-link" asp-controller="Record" asp-action="Filtered" asp-route-pageIndex="@((Model.RecordCount / Model.PageSize) - 1)">@((Model.RecordCount / Model.PageSize) - 1)</a></li>
+            <li class="page-item"><a class="page-link" asp-controller="Record" asp-action="Filtered" asp-route-pageIndex="@(Model.RecordCount / Model.PageSize)">@(Model.RecordCount / Model.PageSize)</a></li>
+            <li class="page-item">
+                <a class="page-link" asp-controller="Record" asp-action="Index" asp-route-pageIndex="@(Model.PageIndex + 1)">Next</a>
+            </li>
+        </ul>
+    </nav>
+
+
+    <table class="table table-responsive table-bordered panel-primary">
+        <thead>
+            <tr>
+                <th>ID number</th>
+                <th>Station Name</th>
+                <th>Month</th>
+                <th>Latitude</th>
+                <th>Longitude</th>
+                <th>Province</th>
+                <th>Mean Temperature</th>
+                <th>Highest Monthly Max Temp</th>
+                <th>Lowest Monthly Min Temp</th>
+                <th>Snowfall</th>
+                <th>Precipitation</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            @foreach (var item in Model.Records)
+            {
+                <tr>
+                    <td>@Html.DisplayFor(model => item.RecordID)</td>
+                    <td>@Html.DisplayFor(model => item.StationName)</td>
+                    <td>@Html.DisplayFor(model => item.Month)</td>
+                    <td>@Html.DisplayFor(model => item.Latitude)</td>
+                    <td>@Html.DisplayFor(model => item.Longitude)</td>
+                    <td>@Html.DisplayFor(model => item.Province)</td>
+                    <td>@Html.DisplayFor(model => item.MeanTemp)</td>
+                    <td>@Html.DisplayFor(model => item.HighestMonthlyMaxTemp)</td>
+                    <td>@Html.DisplayFor(model => item.LowestMonthlyMinTemp)</td>
+                    <td>@Html.DisplayFor(model => item.Snowfall)</td>
+                    <td>@Html.DisplayFor(model => item.TotalPrecipitation)</td>
+
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <nav aria-label="Page navigation example">
+        <ul class="pagination">
+            <li class="page-item"><a class="page-link" href="#">Previous</a></li>
+            <li class="page-item"><a class="page-link" href="#">1</a></li>
+            <li class="page-item"><a class="page-link" href="#">2</a></li>
+            <li class="page-item"><a class="page-link" href="#">3</a></li>
+            <li class="page-item"><a class="page-link" href="#">Next</a></li>
+        </ul>
+    </nav>
+
+</div>
