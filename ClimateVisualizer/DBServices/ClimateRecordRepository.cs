@@ -13,28 +13,48 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 namespace ClimateVisualizer.DBServices
 {
     public class ClimateRecordRepository : IClimateRecordRepository, IDisposable
-    {
-        private static readonly string ClimateDataConnectionString = "Server=LAPTOP-LCLGK31N\\SQLEXPRESS;Database=Warehouse;Trusted_Connection=True;";
-
-        private static readonly string RecordPageQuery = "SELECT c.[RecordID], e.[StationName], e.[Province], e.[Latitude], e.[Longitude], c.[Month], " +
+    {      
+        private const string RecordPageQuery = "SELECT c.[RecordID], e.[StationName], e.[Province], e.[Latitude], e.[Longitude], c.[Month], " +
                 "c.[MeanTemp], c.[HighestMonthlyMaxTemp], c.[LowestMonthlyMinTemp], c.[Snowfall], c.[TotalPrecipitation] " +
                 "FROM [Warehouse].[dbo].[Recs] c INNER JOIN [Warehouse].[dbo].[Stations] e ON c.[StationID] = e.[StationId] ";
                 
-        private static readonly string FilteredPageQuery = "SELECT c.[RecordID], e.[StationName], e.[Province], e.[Latitude], e.[Longitude], c.[Month], " +
-                "c.[MeanTemp], c.[HighestMonthlyMaxTemp], c.[LowestMonthlyMinTemp], c.[Snowfall], c.[TotalPrecipitation] " +
-                "FROM [Warehouse].[dbo].[Recs] c INNER JOIN [Warehouse].[dbo].[Stations] e ON c.[StationID] = e.[StationId] " +
-                "WHERE c.[Month]=@Month AND e.[Province]=@Province " + //AND e.[StationName] LIKE '@Filter' " +
-                "ORDER BY c.[RecordID]";// OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+        private const string PagingClause = "ORDER BY c.[RecordID] OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
 
-        private static readonly string PagingClause = "ORDER BY c.[RecordID] OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+        private const string MonthFilteringClause = "c.[Month]=@Month ";
 
-        private static readonly string MonthFilteringClause = "c.[Month]=@Month ";
+        private const string ProvinceFilteringClause = "e.[Province]=@Province ";
 
-        private static readonly string ProvinceFilteringClause = "e.[Province]=@Province ";
+        private const string StationFilteringClause = "e.[StationName] LIKE %%@Filter%% ";
 
-        private static readonly string StationFilteringClause = "e.[StationName] LIKE %%@Filter%% ";
+        private const string RecordCountQuery = "SELECT DISTINCT count(RecordID) FROM [Warehouse].[dbo].[Recs]";
 
-        private static readonly string RecordCountQuery = "SELECT DISTINCT count(RecordID) FROM [Warehouse].[dbo].[Recs]";
+        private readonly SqlConnection Connection;
+
+        public ClimateRecordRepository(SqlConnection connection)
+        {
+            Connection = connection;
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                Connection.Dispose();
+            }
+        }
+
+        ~ClimateRecordRepository()
+        {
+            Dispose(false);
+        }
+
 
         public IEnumerable<RecordModel> GetClimateRecordPage(int pageIndex, int pageSize)
         {
@@ -42,12 +62,8 @@ namespace ClimateVisualizer.DBServices
 
             string query = RecordPageQuery + PagingClause;
 
-            using (IDbConnection con = new SqlConnection(ClimateDataConnectionString))
-            {
-                if (con.State == ConnectionState.Closed) con.Open();
-                    
-                list = con.Query<RecordModel>(query, new { Offset = (pageIndex - 1) * pageSize, PageSize = pageSize }).ToList();
-            }
+            list = Connection.Query<RecordModel>(query, new { Offset = (pageIndex - 1) * pageSize, PageSize = pageSize }).ToList();
+            
             return list;
         }
 
@@ -86,11 +102,7 @@ namespace ClimateVisualizer.DBServices
             //query = query + PagingClause;
             DateTime? selectMonth = DateTime.ParseExact(month, "yyyy-MM-dd", new CultureInfo("en-US"));
 
-            using (IDbConnection con = new SqlConnection(ClimateDataConnectionString))
-            {
-                if (con.State == ConnectionState.Closed) con.Open();
-                list = con.Query<RecordModel>(query, new { Offset = (pageIndex - 1) * pageSize, PageSize = pageSize, Month = selectMonth, Province = province, Filter = searchStation }).ToList();
-            }
+            list = Connection.Query<RecordModel>(query, new { Offset = (pageIndex - 1) * pageSize, PageSize = pageSize, Month = selectMonth, Province = province, Filter = searchStation }).ToList();            
 
             return list;
         }
@@ -157,19 +169,7 @@ namespace ClimateVisualizer.DBServices
 
         public int GetClimateRecordCount()
         {
-            int count;
-            using (IDbConnection con = new SqlConnection(ClimateDataConnectionString))
-            {
-                if (con.State == ConnectionState.Closed) con.Open();
-                count  = con.ExecuteScalar<int>(RecordCountQuery);
-            }
-
-            return count;
-        }
-
-        public void Dispose()
-        {
-            
+            return Connection.ExecuteScalar<int>(RecordCountQuery);            
         }
     }
 }
