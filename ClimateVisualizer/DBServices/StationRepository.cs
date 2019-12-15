@@ -10,9 +10,8 @@ using System.Threading.Tasks;
 
 namespace ClimateVisualizer.DBServices
 {
-    public class StationRepository : IStationRepository
+    public class StationRepository : IStationRepository, IDisposable
     {
-        private static readonly string ClimateDataConnectionString = "Server=LAPTOP-LCLGK31N\\SQLEXPRESS;Database=Warehouse;Trusted_Connection=True;";
 
         private static readonly string StationListQuery = "Select [StationId], [StationName], [Province], [Latitude], [Longitude] from [Warehouse].[dbo].[Stations] " + 
         "ORDER BY [StationId] OFFSET @Offset ROWS FETCH NEXT @Pagesize ROWS ONLY";
@@ -21,17 +20,40 @@ namespace ClimateVisualizer.DBServices
 
         private static readonly string WhereClause = "WHERE e.[StationId] = @StationID";
 
+        private readonly SqlConnection Connection;
+
+        public StationRepository(SqlConnection connection)
+        {
+            Connection = connection;
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                Connection.Dispose();
+            }
+        }
+
+        ~StationRepository()
+        {
+            Dispose(false);
+        }
+
 
         public IEnumerable<StationListModel> GetStationList(int pageIndex, int pageSize)
         {
             List<StationListModel> list = new List<StationListModel>();
 
-            using (IDbConnection con = new SqlConnection(ClimateDataConnectionString))
-            {
-                if (con.State == ConnectionState.Closed) con.Open();
+            list = Connection.Query<StationListModel>(StationListQuery, new { Offset = (pageIndex - 1) * pageSize, PageSize = pageSize }).ToList();
 
-                list = con.Query<StationListModel>(StationListQuery, new { Offset = (pageIndex - 1) * pageSize, PageSize = pageSize }).ToList();
-            }
             return list;
         }
 
@@ -39,12 +61,8 @@ namespace ClimateVisualizer.DBServices
         {
             List<StationDetailModel> list = new List<StationDetailModel>();
 
-            using (IDbConnection con = new SqlConnection(ClimateDataConnectionString))
-            {
-                if (con.State == ConnectionState.Closed) con.Open();
+            list = Connection.Query<StationDetailModel>(StationDetailQuery + WhereClause, new { Offset = (pageIndex - 1) * pageSize, PageSize = pageSize, StationID = id}).ToList();
 
-                list = con.Query<StationDetailModel>(StationDetailQuery + WhereClause, new { Offset = (pageIndex - 1) * pageSize, PageSize = pageSize, StationID = id}).ToList();
-            }
             return list;
         }
 

@@ -8,9 +8,11 @@ namespace ClimateVisualizer
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
+    using Microsoft.Data.SqlClient;
     using DBServices;
     using Interfaces;
     using Models;
+    using Microsoft.Extensions.Hosting;
 
     public class Startup
     {
@@ -19,7 +21,7 @@ namespace ClimateVisualizer
             Configuration = configuration;
         }
 
-        public IConfiguration Configuration { get; }
+        public IConfiguration Configuration { get; private set; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
@@ -32,19 +34,36 @@ namespace ClimateVisualizer
             });
  
             services.AddControllersWithViews();
-            //services.AddPaging();
-
+            
             services.AddScoped<IClimateRecordRepository, ClimateRecordRepository>();
             services.AddScoped<IClimateRecordService, ClimateRecordService>();
             services.AddScoped<IStationRepository, StationRepository>();
             services.AddScoped<IStationService, StationService>();
+
+            services.AddScoped<SqlConnection>(_ => new SqlConnection(Configuration["Database:ConnectionString"]));
             
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            app.UseDeveloperExceptionPage();
+            if (env.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
+            }
+            else
+            {
+                app.UseExceptionHandler("/Home/Error");
+                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+                app.UseHsts();
+            }
+
+            var dom = new ConfigurationBuilder()
+                .SetBasePath(env.ContentRootPath)
+                .AddJsonFile("appsettings.json")
+                .Build();
+
+            this.Configuration = dom;
 
             app.UseHttpsRedirection();
             app.UseStaticFiles();
