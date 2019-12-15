@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace ClimateVisualizer.Interfaces
 {
-    interface IStationService
+    public interface IStationService
     {
         IEnumerable<StationListModel> GetStationList(int pageIndex, int pageSize);
         IEnumerable<StationDetailModel> GetStationDetails(int pageIndex, int pageSize, int id);
